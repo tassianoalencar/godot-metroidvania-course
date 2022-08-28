@@ -1,21 +1,23 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=2 format=2]
 
 [ext_resource path="res://src/actors/player/Player.tscn" type="PackedScene" id=1]
-
-[sub_resource type="RectangleShape2D" id=1]
-extents = Vector2( 161.5, 10 )
 
 [node name="World" type="Node"]
 
 [node name="Player" parent="." instance=ExtResource( 1 )]
 position = Vector2( 125, 138 )
 
-[node name="Floor" type="StaticBody2D" parent="."]
-position = Vector2( 165, 174 )
-__meta__ = {
-"_edit_group_": true
-}
+[node name="CameraFollow" parent="Player" index="3"]
+remote_path = NodePath("../../Camera")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Floor"]
-position = Vector2( -4.5, 0 )
-shape = SubResource( 1 )
+[node name="Floor" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Floor"]
+polygon = PoolVector2Array( 0, -16, 0, 184, 80, 184, 152, 168, 168, 168, 168, 184, 192, 184, 192, 168, 208, 168, 208, 184, 232, 184, 232, 120, 272, 120, 272, 184, 328, 184, 328, 0, 344, 0, 344, 200, -16, 200, -16, -16 )
+
+[node name="Camera" type="Camera2D" parent="."]
+position = Vector2( 125, 130 )
+current = true
+smoothing_enabled = true
+
+[editable path="Player"]

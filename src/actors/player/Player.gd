@@ -26,7 +26,7 @@ extends KinematicBody2D
 export(int) var max_speed = 65
 export(int) var acceleration = 512
 export(float) var friction = 0.25
-export(int) var max_jump = 1
+export(int) var max_jump = 2
 
 # Gravidades
 export(int) var gravity = 200
@@ -34,15 +34,24 @@ export(int) var jump_force = 128
 export(int) var max_slop_angle = 45
 
 var motion: Vector2 = Vector2.ZERO
-var jump_count:int = 0
+var jump_count: int = 0
+var snap_vector: Vector2 = Vector2.ZERO
+var snap_slide: int = 4
+var is_jumping: bool = false
+
+onready var spriteAnimator: AnimationPlayer = $SpriteAnimator
+onready var sprite: Sprite = $Sprite
 
 
 func _physics_process(delta: float) -> void:
+	is_jumping = false
 	var input_vector: Vector2 = _get_input_vector()
 	_apply_horizontal_acceleration(input_vector, delta)
 	_apply_friction(input_vector)
-	_jump_check(delta)
+	_update_snap_vector()
+	_jump_check()
 	_apply_gravity(delta)
+	_update_animations(input_vector)
 	_move()
 
 
@@ -64,8 +73,13 @@ func _apply_friction(input_vector: Vector2) -> void:
 		motion.x = lerp(motion.x, 0, friction)
 
 
+func _update_snap_vector() -> void:
+	if is_on_floor():
+		snap_vector = Vector2.DOWN
+
+
 # Zera o verifica se o player quer pular
-func _jump_check(delta: float) -> void:
+func _jump_check() -> void:
 	if is_on_floor():
 		jump_count = 0
 	else:
@@ -75,7 +89,9 @@ func _jump_check(delta: float) -> void:
 	if Input.is_action_just_pressed("jump"):
 		if jump_count < max_jump:
 			motion.y = -jump_force
+			is_jumping = true
 			jump_count += 1
+			snap_vector = Vector2.ZERO
 
 
 # Aplica a gravidade quando está no ar
@@ -85,10 +101,32 @@ func _apply_gravity(delta: float) -> void:
 		motion.y = min(motion.y, jump_force)
 
 
+func _update_animations(input_vector: Vector2) -> void:
+	if input_vector.x != 0:
+		spriteAnimator.play("Walk")
+		sprite.scale.x = sign(input_vector.x)
+	else:
+		spriteAnimator.play("Idle")
+	
+	if not is_on_floor():
+		spriteAnimator.play("Jump")
+
 # Movimenta o player
 func _move() -> void:
-	motion = move_and_slide(motion, Vector2.UP)
+	var was_in_air = not is_on_floor()
+	var was_on_floor: bool = is_on_floor()
+	
+	var last_motion: Vector2 = motion
+	var last_position: Vector2 = position
 
+	motion = move_and_slide_with_snap(motion, snap_vector * snap_slide, Vector2.UP, true, snap_slide, deg2rad(max_slop_angle))
+
+	if was_in_air and is_on_floor():
+		motion.x = last_motion.x
+
+	if was_on_floor and not is_on_floor() and not is_jumping:
+		motion.y = 0
+		position.y = last_position.y
 
 
 
