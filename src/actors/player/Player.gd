@@ -22,6 +22,9 @@ extends KinematicBody2D
 16. private methods
 """
 
+# Pacotes
+const DustEffect: PackedScene = preload("res://src/effects/DustEffect.tscn")
+
 # Movimentações na plataforma
 export(int) var max_speed = 65
 export(int) var acceleration = 512
@@ -29,7 +32,7 @@ export(float) var friction = 0.25
 export(int) var max_jump = 2
 
 # Gravidades
-export(int) var gravity = 200
+export(int) var gravity = 256
 export(int) var jump_force = 128
 export(int) var max_slop_angle = 45
 
@@ -102,14 +105,27 @@ func _apply_gravity(delta: float) -> void:
 
 
 func _update_animations(input_vector: Vector2) -> void:
+	sprite.scale.x = sign(get_local_mouse_position().x)
+	
 	if input_vector.x != 0:
 		spriteAnimator.play("Walk")
-		sprite.scale.x = sign(input_vector.x)
+		spriteAnimator.playback_speed = input_vector.x * sprite.scale.x
 	else:
+		spriteAnimator.playback_speed = 1
 		spriteAnimator.play("Idle")
 	
 	if not is_on_floor():
 		spriteAnimator.play("Jump")
+
+
+# Cria o efeito dust
+func _create_dust_effect() -> void:
+	var effect_position: Vector2 = global_position
+	var dustEffect: Node2D = DustEffect.instance()
+	
+	get_tree().current_scene.add_child(dustEffect)
+	dustEffect.global_position = effect_position
+
 
 # Movimenta o player
 func _move() -> void:
